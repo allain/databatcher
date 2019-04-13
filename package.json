@@ -4,12 +4,38 @@
   "description": "The ideas of DataLoader applied to both loading and saving",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest --config jest.config.js"
   },
   "keywords": [],
   "author": "Allain Lalonde <allain.lalonde@gmail.com>",
   "license": "ISC",
   "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "@pika/plugin-build-node": "^0.3.15",
+    "@pika/plugin-build-web": "^0.3.15",
+    "@pika/plugin-standard-pkg": "^0.3.15",
+    "@types/jest": "^24.0.11",
+    "babel-jest": "^24.7.1",
+    "eslint": "^5.16.0",
     "jest": "^24.7.1"
+  },
+  "@pika/pack": {
+    "pipeline": [
+      [
+        "@pika/plugin-standard-pkg",
+        {
+          "exclude": [
+            "**/*.test.*"
+          ]
+        }
+      ],
+      [
+        "@pika/plugin-build-node"
+      ],
+      [
+        "@pika/plugin-build-web"
+      ]
+    ]
   }
 }
