@@ -103,7 +103,7 @@ describe('DataBatcher', () => {
     expect(batcher.load(1)).rejects.toThrow('TEST')
   })
 
-  it('handles return errors in batchSaver as rejected promises', () => {
+  it('handles returning errors in batchSaver as rejected promises', () => {
     const loader = async () => []
     const saver = async () => [new Error('TEST')]
     const batcher = new DataBatcher(loader, saver)
