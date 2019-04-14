@@ -124,7 +124,7 @@ export default class DataBatcher {
     const batch = this._queue.splice(0, batchSize)
     if (batchType === 'load') {
       await this._batchLoad(batch)
-    } else if (batchType === 'save') {
+    } /* if (batchType === 'save') */ else {
       await this._batchSave(batch)
     }
 
