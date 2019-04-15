@@ -18,7 +18,7 @@ describe('DataBatcher', () => {
   it('uses batchLoader to loadMany', async () => {
     const loader = jest.fn(async keys => keys)
     const batcher = new DataBatcher(loader)
-    const result = await batcher.loadMany([1, 2])
+    await batcher.loadMany([1, 2])
     expect(loader).toHaveBeenCalledWith([1, 2])
   })
 
@@ -59,6 +59,16 @@ describe('DataBatcher', () => {
     expect(loadA).toBe(loadB) // cacheKeyFn causes collisions
   })
 
+  it('uses cache key function to delete items from cache', async () => {
+    const loader = jest.fn(async keys => keys)
+    const saver = jest.fn(async writes => writes.map(() => true))
+    const batcher = new DataBatcher(loader, saver, { cacheKeyFn: k => k * 10 })
+    const loadA = batcher.load(1)
+    batcher.save(1, 'TEST')
+    const loadB = batcher.load(1)
+    expect(loadA).not.toBe(loadB)
+  })
+
   it('uses batchSaver to save', async () => {
     const loader = jest.fn(async keys => keys)
     const saver = jest.fn(async writes => writes.map(() => undefined))
@@ -73,7 +83,7 @@ describe('DataBatcher', () => {
     const saver = jest.fn(async writes => writes.map(() => undefined))
 
     const batcher = new DataBatcher(loader, saver)
-    const result = await batcher.saveMany([[1, 1], [2, 2]])
+    await batcher.saveMany([[1, 1], [2, 2]])
     expect(saver).toHaveBeenCalledWith([[1, 1], [2, 2]])
   })
 
@@ -151,7 +161,7 @@ describe('DataBatcher', () => {
     })
 
     it('rejects if batchLoadFn resolve to array with wrong length', () => {
-      const loader = async keys => [true]
+      const loader = async () => [true]
 
       const batcher = new DataBatcher(loader)
       return expect(batcher.loadMany([1, 2])).rejects.toThrow(
@@ -180,7 +190,7 @@ describe('DataBatcher', () => {
 
     it('rejects if batchSaveFn resolve to array with wrong length', () => {
       const loader = async keys => keys
-      const saver = async keys => []
+      const saver = async () => []
       const batcher = new DataBatcher(loader, saver)
       return expect(batcher.save(1, 'test')).rejects.toThrow(
         'batchSaveFn must return Promise<Array<any>> of length 1 but got length: 0'

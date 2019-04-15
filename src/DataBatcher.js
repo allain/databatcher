@@ -1,3 +1,8 @@
+const isFunction = x => typeof x === 'function'
+const isUndefined = x => typeof x === 'undefined'
+const isDefined = x => typeof x !== 'undefined'
+const isObject = x => typeof x === 'object'
+
 export default class DataBatcher {
   constructor (batchLoadFn, batchSaveFn, options) {
     this._batchLoadFn = this._prepareBatchLoadFn(batchLoadFn)
@@ -10,7 +15,7 @@ export default class DataBatcher {
   }
 
   _prepareBatchLoadFn (batchLoadFn) {
-    if (typeof batchLoadFn !== 'function') {
+    if (!isFunction(batchLoadFn)) {
       throw new TypeError(
         'DataBatcher must be constructed with a batch load function which accepts ' +
           `Array<key> and returns Promise<Array<value>>, but got: ${batchLoadFn}.`
@@ -22,14 +27,11 @@ export default class DataBatcher {
 
   _prepareBatchSaveFn (batchSaveFn, options) {
     // second param is options
-    if (typeof options === 'undefined' && typeof batchSaveFn === 'object') {
+    if (isUndefined(options) && isObject(batchSaveFn)) {
       return null
     }
 
-    if (
-      typeof batchSaveFn !== 'undefined' &&
-      typeof batchSaveFn !== 'function'
-    ) {
+    if (isDefined(batchSaveFn) && !isFunction(batchSaveFn)) {
       throw new TypeError(
         'DataBatcher must be constructed with a batch save function which accepts ' +
           `Array<[key,value]> and returns Promise<Array<void>>, but got: ${batchSaveFn}.`
@@ -40,7 +42,7 @@ export default class DataBatcher {
   }
 
   _prepareOptions (batchSaveFn, options) {
-    if (typeof options === 'undefined' && typeof batchSaveFn === 'object') {
+    if (isUndefined(options) && isObject(batchSaveFn)) {
       options = batchSaveFn
     }
 
@@ -56,24 +58,23 @@ export default class DataBatcher {
     const cacheKeyFn = this._options.cacheKeyFn
     const cacheKey = cacheKeyFn ? cacheKeyFn(key) : key
 
-    if (!shouldCache) return this._loadLater(key)
-
-    let result = this._loadCache[cacheKey]
-    if (!result) {
-      result = this._loadCache[key] = this._loadLater(key)
+    if (shouldCache) {
+       return (
+        this._loadCache[cacheKey] ||
+        (this._loadCache[cacheKey] = this._loadLater(key))
+      )
+    } else {
+      return this._loadLater(key)
     }
-    return result
   }
 
   _loadLater (key) {
-    const promise = new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       this._queue.push({ resolve, reject, key, type: 'load' })
       if (this._queue.length === 1 && !this._flushing) {
         process.nextTick(this._flushQueue.bind(this))
       }
     })
-
-    return promise
   }
 
   saveMany (saves) {
@@ -81,21 +82,21 @@ export default class DataBatcher {
   }
 
   save (key, value) {
-    const saved = this._saveLater(key, value)
-    delete this._loadCache[key]
+    // clear item from load cache
+    const cacheKeyFn = this._options.cacheKeyFn
+    const cacheKey = cacheKeyFn ? cacheKeyFn(key) : key
+    delete this._loadCache[cacheKey]
 
-    return saved
+    return this._saveLater(key, value)
   }
 
   _saveLater (key, value) {
-    const promise = new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       this._queue.push({ resolve, reject, key, value, type: 'save' })
       if (this._queue.length === 1 && !this._flushing) {
         process.nextTick(this._flushQueue.bind(this))
       }
     })
-
-    return promise
   }
 
   async _flushQueue () {
