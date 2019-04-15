@@ -59,7 +59,7 @@ export default class DataBatcher {
     const cacheKey = cacheKeyFn ? cacheKeyFn(key) : key
 
     if (shouldCache) {
-       return (
+      return (
         this._loadCache[cacheKey] ||
         (this._loadCache[cacheKey] = this._loadLater(key))
       )
